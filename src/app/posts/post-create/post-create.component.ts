@@ -13,6 +13,7 @@ import { Post } from '../post.model';
 export class PostCreateComponent implements OnInit {
   enteredContent = '';
   enteredTitle = '';
+  isLoading = false;
   private mode = 'create';
   private postId: string;
   post: Post;
@@ -24,7 +25,13 @@ export class PostCreateComponent implements OnInit {
       if (paramMap.has('postId')) {
         this.mode = 'edit';
         this.postId = paramMap.get('postId');
-        this.post = this.postsService.getPost(this.postId);
+        // start spinner
+        this.isLoading = true;
+        this.postsService.getPost(this.postId).subscribe((post) => {
+          // end spinner
+          this.isLoading = false;
+          this.post = {id: post.id, title: post.title, content: post.content};
+        });
       } else {
         this.mode = 'create';
         this.postId = null;
@@ -38,6 +45,7 @@ export class PostCreateComponent implements OnInit {
       console.log('Form is invalid');
       return;
     }
+    this.isLoading = true;
     if (this.mode === 'create') {
       console.log('Creating post in onSavePost');
       this.postsService.addPost(form.value.title, form.value.content);
@@ -46,6 +54,7 @@ export class PostCreateComponent implements OnInit {
       this.postsService.updatePost(this.postId, form.value.title, form.value.content);
     }
 
+    console.log('about to reset the form after a ' + this.mode);
     form.resetForm();
   }
 

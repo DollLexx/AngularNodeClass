@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import {HttpClient} from '@angular/common/http';
+import { Router } from '@angular/router';
 
 @Injectable({providedIn: 'root'})
 export class PostsService {
@@ -10,7 +11,7 @@ export class PostsService {
 
   private postsUpdated = new Subject<Post[]>();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private router: Router) {}
 
   getPosts() {
     this.http.get<{message: string, posts: any }>('http://localhost:3000/api/posts')
@@ -44,7 +45,9 @@ export class PostsService {
   }
 
   getPost(id: string) {
-    return {...this.posts.find(p => p.id === id)};
+    // return {...this.posts.find(p => p.id === id)};  can't return like this anymore.  Need to return async
+    console.log('Am in the get post method passing in an id of ' + id);
+    return this.http.get<{id: string, title: string, content: string}>('http://localhost:3000/api/posts/' + id);
   }
 
   updatePost(id: string, title: string, content: string) {
@@ -54,9 +57,14 @@ export class PostsService {
     this.http.put<{message: string}>('http://localhost:3000/api/posts/' + id, post)
     .subscribe((responseData) => {
       console.log('Updated Post message is ' + responseData.message);
-
-//      this.posts.push(post);
-  //    this.postsUpdated.next([...this.posts]);
+      const updatedPosts = [...this.posts];
+      const oldPostIndex = updatedPosts.findIndex(p => p.id === post.id);
+      updatedPosts[oldPostIndex] = post;
+      this.posts = updatedPosts;
+      this.postsUpdated.next([...this.posts]);
+      this.router.navigate([
+        '/'
+      ]);
     });
   }
 
@@ -68,6 +76,9 @@ export class PostsService {
         post.id = responseData.postId;
         this.posts.push(post);
         this.postsUpdated.next([...this.posts]);
+        this.router.navigate([
+          '/'
+        ]);
       });
 
   }
