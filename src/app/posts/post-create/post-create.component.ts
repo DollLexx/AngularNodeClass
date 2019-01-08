@@ -71,7 +71,7 @@ export class PostCreateComponent implements OnInit {
       console.log(this.form);
       const reader = new FileReader();
       reader.onload = () => {
-        this.imagePreview = reader.result;
+        this.imagePreview = <string>reader.result;
       };
       reader.readAsDataURL(file);
   }
@@ -85,7 +85,10 @@ export class PostCreateComponent implements OnInit {
     this.isLoading = true;
     if (this.mode === 'create') {
       console.log('Creating post in onSavePost');
-      this.postsService.addPost(this.form.value.title, this.form.value.content);
+      this.postsService.addPost(
+        this.form.value.title,
+        this.form.value.content,
+        this.form.value.image);
     } else {
       console.log('updating post in onSavePost');
       this.postsService.updatePost(this.postId, this.form.value.title, this.form.value.content);
