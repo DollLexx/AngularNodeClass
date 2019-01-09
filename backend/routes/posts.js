@@ -36,9 +36,11 @@ const storage = multer.diskStorage({
 
 router.post('', multer({storage: storage}).single('image'), (req, res, next) => {
   //body added to request by body parser
+  const url = req.protocol + '://' + req.get('host');
   const post = new Post({
     title: req.body.title,
-    content: req.body.content
+    content: req.body.content,
+    imagePath: url + '/images/' + req.file.filename
   });
   post.save().then((createdPost) => {
     console.log("post saved and id is " + createdPost._id);
@@ -46,21 +48,46 @@ router.post('', multer({storage: storage}).single('image'), (req, res, next) => 
 
     res.status(201).json({
       message: "Post added successfully",
-      postId: createdPost._id
+      post: {
+        id: createdPost._id,
+        title: createdPost.title,
+        content: createdPost.content,
+        imagePath: createdPost.imagePath
+      }
     })
   });
 
 });
 
-router.put('/:id', (req, res, next) => {
-  const post = new Post ({
+router.put('/:id',
+  multer({storage: storage}).single('image'),
+  (req, res, next) => {
+    console.log(req.file);
+    let imagePath = req.body.imagePath;
+    if(req.file){
+      const url = req.protocol + '://' + req.get('host');
+      imagePath = url + '/images/' + req.file.filename;
+    }
+    const post = new Post ({
     _id: req.body.id,
     title: req.body.title,
-    content: req.body.content
+    content: req.body.content,
+    imagePath: imagePath
   });
+  console.log(post);
   Post.updateOne({_id: req.params.id}, post).then((response) => {
     console.log(response);
-    res.status(200).json({message: 'Update successful'});
+    res.status(200).json(
+      {
+        message: 'Update successful',
+        post: {
+          id: response._id,
+          title: response.title,
+          content: response.content,
+          imagePath: response.imagePath
+      }
+    })
+      ;
   });
 });
 
@@ -83,14 +110,16 @@ router.get('/:id', (req, res, next) => {
       res.status(200).json({
         id: post._id,
         title: post.title,
-        content: post.content
+        content: post.content,
+        imagePath: post.imagePath
       });
     }
     else {
       res.status(404).json({
         id: null,
         title: null,
-        content: null
+        content: null,
+        imagePath: null
       });
     }
   });

@@ -20,7 +20,8 @@ export class PostsService {
         return {
           title: post.title,
           content: post.content,
-          id: post._id
+          id: post._id,
+          imagePath: post.imagePath
         };
       });
     }))
@@ -47,19 +48,43 @@ export class PostsService {
   getPost(id: string) {
     // return {...this.posts.find(p => p.id === id)};  can't return like this anymore.  Need to return async
     console.log('Am in the get post method passing in an id of ' + id);
-    return this.http.get<{id: string, title: string, content: string}>('http://localhost:3000/api/posts/' + id);
+    const returnValue = this.http.get<{
+      id: string,
+      title: string,
+      content: string,
+      imagePath: string }>(
+        'http://localhost:3000/api/posts/' + id);
+
+      console.log('Found the following object ', returnValue);
+
+    return returnValue;
   }
 
-  updatePost(id: string, title: string, content: string) {
+  updatePost(id: string, title: string, content: string, image: File | string) {
     console.log('In update post in post service');
     console.log('id is  ' + id);
-    const post: Post = { id: id, title: title, content: content};
-    this.http.put<{message: string}>('http://localhost:3000/api/posts/' + id, post)
+    let postData: Post | FormData = null;
+    if (typeof(image) === 'object') {
+      postData = new FormData();
+      postData.append('id', id);
+      postData.append('title', title);
+      postData.append('content', content);
+      postData.append('image', image, title);
+    } else {
+      postData = {id: id,
+        title: title,
+        content: content,
+        imagePath: image };
+
+    }
+    this.http
+    .put<{message: string, post: Post}>('http://localhost:3000/api/posts/' + id, postData)
     .subscribe((responseData) => {
       console.log('Updated Post message is ' + responseData.message);
       const updatedPosts = [...this.posts];
-      const oldPostIndex = updatedPosts.findIndex(p => p.id === post.id);
-      updatedPosts[oldPostIndex] = post;
+      const oldPostIndex = updatedPosts.findIndex(p => p.id === id);
+
+      updatedPosts[oldPostIndex] = responseData.post;
       this.posts = updatedPosts;
       this.postsUpdated.next([...this.posts]);
       this.router.navigate([
@@ -74,15 +99,17 @@ export class PostsService {
     postData.append('content', content);
     postData.append('image', image, title);
 
-    this.http.post<{message: string, postId: string }>(
+    this.http
+    .post<{message: string, post: Post }>(
       'http://localhost:3000/api/posts', postData
       )
       .subscribe((responseData) => {
         console.log('Post message is ' + responseData.message);
         const post: Post = {
-          id: responseData.postId,
+          id: responseData.post.id,
           title: title,
-          content: content
+          content: content,
+          imagePath: responseData.post.imagePath
         };
         this.posts.push(post);
         this.postsUpdated.next([...this.posts]);
