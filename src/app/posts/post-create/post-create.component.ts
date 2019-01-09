@@ -21,9 +21,12 @@ export class PostCreateComponent implements OnInit {
   post: Post;
   imagePreview: string;
 
-  constructor(public postsService: PostsService, public route: ActivatedRoute) {}
+  constructor(
+    public postsService: PostsService,
+    public route: ActivatedRoute) {}
 
   ngOnInit() {
+    console.log('Am in the ngOnInit method');
     this.form = new FormGroup({
       'title': new FormControl(null, {validators: [
         Validators.required,
@@ -40,18 +43,25 @@ export class PostCreateComponent implements OnInit {
 
     this.route.paramMap.subscribe((paramMap: ParamMap) => {
       if (paramMap.has('postId')) {
+        console.log('Am in the ngInit subscribe path.');
         this.mode = 'edit';
         this.postId = paramMap.get('postId');
         // start spinner
         this.isLoading = true;
-        this.postsService.getPost(this.postId).subscribe((post) => {
+        this.postsService.getPost(this.postId).subscribe((postData) => {
           // end spinner
           this.isLoading = false;
-          this.post = {id: post.id, title: post.title, content: post.content};
+          this.post = {
+            id: postData.id,
+            title: postData.title,
+            content: postData.content,
+            imagePath: postData.imagePath
+          };
           this.form.setValue(
             {
-            'title': this.post.title,
-            'content': this.post.content
+            title: this.post.title,
+            content: this.post.content,
+            image: this.post.imagePath
           });
         });
       } else {
@@ -76,7 +86,7 @@ export class PostCreateComponent implements OnInit {
       reader.readAsDataURL(file);
   }
 
-  onSavePost(){
+  onSavePost() {
     console.log(this.form);
     if (this.form.invalid) {
       console.log('Form is invalid');
@@ -91,7 +101,11 @@ export class PostCreateComponent implements OnInit {
         this.form.value.image);
     } else {
       console.log('updating post in onSavePost');
-      this.postsService.updatePost(this.postId, this.form.value.title, this.form.value.content);
+      this.postsService.updatePost(
+        this.postId,
+        this.form.value.title,
+        this.form.value.content,
+        this.form.value.image);
     }
 
     console.log('about to reset the form after a ' + this.mode);
